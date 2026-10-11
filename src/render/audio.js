@@ -2,7 +2,8 @@
 // thrust are filtered noise, the saucer a warbling tone, the heartbeat two low
 // thumps); these are synthesized stand-ins for them.
 
-const BANGS = { bang3: [0.9, 500], bang2: [0.6, 900], bang1: [0.4, 1600], die: [1.3, 700] };
+// [seconds, noise cutoff Hz, the low thud under it: start Hz, or 0 for none]
+const BANGS = { bang3: [1.1, 320, 110], bang2: [0.8, 520, 150], bang1: [0.5, 900, 0], die: [1.6, 380, 90] };
 
 export class Sound {
   constructor() {
@@ -42,8 +43,8 @@ export class Sound {
       if (BANGS[e]) this.bang(...BANGS[e]);
       else if (e === 'fire') this.pew(1400, 0.15);
       else if (e === 'sfire') this.pew(1900, 0.12);
-      else if (e === 'beat1') this.thump(62);
-      else if (e === 'beat2') this.thump(55);
+      else if (e === 'beat1') this.thump(52);
+      else if (e === 'beat2') this.thump(46);
       else if (e === 'extra') this.extra();
     }
   }
@@ -82,19 +83,32 @@ export class Sound {
     this.saucerOsc.start(); this.lfo.start();
   }
 
-  bang(dur, cutoff) {
+  /** An explosion: filtered noise falling darker, over a low thud that drops in pitch. */
+  bang(dur, cutoff, boom) {
     const c = this.ctx, t = c.currentTime;
     const n = c.createBufferSource();
     n.buffer = this.noise;
-    const lp = c.createBiquadFilter();
-    lp.type = 'lowpass';
+    const lp = c.createBiquadFilter(), lp2 = c.createBiquadFilter();
+    lp.type = lp2.type = 'lowpass';
     lp.frequency.setValueAtTime(cutoff, t);
-    lp.frequency.exponentialRampToValueAtTime(cutoff / 4, t + dur);
+    lp.frequency.exponentialRampToValueAtTime(cutoff / 6, t + dur);
+    lp2.frequency.value = cutoff * 1.5;
     const gn = c.createGain();
-    gn.gain.setValueAtTime(1.6, t);
+    gn.gain.setValueAtTime(0.001, t);
+    gn.gain.exponentialRampToValueAtTime(2.6, t + 0.012);
     gn.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    n.connect(lp).connect(gn).connect(this.out);
-    n.start(t, Math.random() * 0.5); n.stop(t + dur + 0.05);
+    n.connect(lp).connect(lp2).connect(gn).connect(this.out);
+    n.start(t, Math.random() * 0.4); n.stop(t + dur + 0.05);
+    if (!boom) return;
+    const o = c.createOscillator(), og = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(boom, t);
+    o.frequency.exponentialRampToValueAtTime(30, t + dur * 0.6);
+    og.gain.setValueAtTime(0.001, t);
+    og.gain.exponentialRampToValueAtTime(1.1, t + 0.01);
+    og.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.7);
+    o.connect(og).connect(this.out);
+    o.start(t); o.stop(t + dur);
   }
 
   pew(hz, dur) {
@@ -109,15 +123,20 @@ export class Sound {
     o.start(t); o.stop(t + dur + 0.02);
   }
 
+  /** A heartbeat note: a soft, low thud, sagging a little in pitch, with the edges taken off. */
   thump(hz) {
     const c = this.ctx, t = c.currentTime;
-    const o = c.createOscillator(), gn = c.createGain();
-    o.type = 'square';
-    o.frequency.value = hz;
-    gn.gain.setValueAtTime(0.7, t);
-    gn.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    o.connect(gn).connect(this.out);
-    o.start(t); o.stop(t + 0.14);
+    const o = c.createOscillator(), lp = c.createBiquadFilter(), gn = c.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(hz, t);
+    o.frequency.exponentialRampToValueAtTime(hz * 0.8, t + 0.16);
+    lp.type = 'lowpass';
+    lp.frequency.value = 180;
+    gn.gain.setValueAtTime(0.001, t);
+    gn.gain.exponentialRampToValueAtTime(0.5, t + 0.015);
+    gn.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    o.connect(lp).connect(gn).connect(this.out);
+    o.start(t); o.stop(t + 0.2);
   }
 
   extra() {
