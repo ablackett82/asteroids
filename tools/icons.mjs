@@ -17,8 +17,8 @@ function icon(size) {
   const r = new Raster(size, size);
   const s = new Screen();
   // on a 100 x 100 grid
-  s.poly([...ROCKS[0], ROCKS[0][0]], 62, 36, 5);
-  s.poly([...ROCKS[2], ROCKS[2][0]], 76, 74, 2);
+  s.poly(ROCKS[0], 62, 36, 5);
+  s.poly(ROCKS[2], 76, 74, 2);
   const a = Math.atan2(36 - 72, 62 - 28);   // the ship at (28, 72) aims at the rock
   s.shipIcon(28, 72, 1.3, 1, a);
   for (const d of [26, 35]) s.dot(28 + Math.cos(a) * d, 72 + Math.sin(a) * d);

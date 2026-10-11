@@ -16,7 +16,8 @@
 // Swap sides mirrors either layout for left-handers. In landscape the
 // controls sit see-through over the bottom corners; in portrait they go in the
 // space under the picture (main.js asks for that space with `reserved`).
-// A quick tap anywhere starts a game (consumeStart).
+// A quick tap anywhere starts a game (consumeStart). main.js calls layout()
+// when the screen changes size.
 
 const STORE_KEY = 'asteroids.touch';
 const DEFAULTS = { mode: 'buttons', swap: false, autoFire: true, size: 1, opacity: 0.4 };
@@ -32,7 +33,6 @@ export class Touch {
     this.buildOverlay();
     this.bindEvents();
     this.applySettings();
-    window.addEventListener('resize', () => this.layout());
   }
 
   get active() { return this.seenTouch; }
@@ -86,7 +86,7 @@ export class Touch {
   zoneAt(x, y) {
     const h = this.geom.hyper, pad = this.geom.u * 0.25;
     if (x > h.x - pad && x < h.x + h.w + pad && y > h.y - pad && y < h.y + h.h + pad) return 'hyper';
-    const left = x < window.innerWidth / 2;
+    const left = x < this.el.clientWidth / 2;
     return left !== this.settings.swap ? 'turn' : 'act';
   }
 
@@ -226,11 +226,11 @@ export class Touch {
     this.onLayout?.();
   }
 
-  get portrait() { return window.innerHeight > window.innerWidth; }
+  get portrait() { return this.el.clientHeight > this.el.clientWidth; }
 
-  /** Geometry in window pixels. */
+  /** Geometry in window pixels, over the visible area main.js sized the stage to. */
   layout() {
-    const Wd = window.innerWidth, Hd = window.innerHeight;
+    const Wd = this.el.clientWidth, Hd = this.el.clientHeight;
     const cs = getComputedStyle(document.documentElement);
     const inset = (n) => parseFloat(cs.getPropertyValue(n)) || 0;
     const sb = inset('--sat-b'), sl = inset('--sat-l'), sr = inset('--sat-r');
@@ -274,7 +274,7 @@ export class Touch {
   /** The height at the bottom of the screen the controls take up (for portrait layout). */
   get reserved() {
     if (!this.active || !this.portrait) return 0;
-    return window.innerHeight - (this.geom.hyper.y - this.geom.u * 0.4);
+    return this.el.clientHeight - (this.geom.hyper.y - this.geom.u * 0.4);
   }
 }
 

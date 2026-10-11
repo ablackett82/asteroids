@@ -22,7 +22,7 @@ html, body {
   touch-action: none;
 }
 #stage.top { align-items: flex-start; }
-#stage.top #screen { outline: 1px solid #1c2633; } /* in portrait, where the picture ends */
+#screen { outline: 1px solid #1c2633; } /* where the picture ends, when it doesn't fill the screen (it wraps there) */
 
 #screen {
   background: #000;

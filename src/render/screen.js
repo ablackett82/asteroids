@@ -6,21 +6,27 @@
 import { W, H, ROCK_SCALE } from '../game/asteroids.js';
 import { strokes } from './font.js';
 
-// the four rock outlines, on a grid of -4..4
+// The cabinet's own outlines, from its vector ROM (the listing at
+// computerarcheology.com/Arcade/Asteroids/VectorROM.html), turned from the
+// beam's relative moves into points and flipped to y down. The rocks are on a
+// grid of -4..4; the ship points along +x on a grid of -5..7.
 export const ROCKS = [
-  [[-4, -2], [-2, -4], [0, -2], [2, -4], [4, -2], [3, 0], [4, 2], [1, 4], [-2, 4], [-4, 2]],
-  [[-4, -2], [-2, -4], [2, -4], [4, -1], [4, 1], [2, 4], [0, 4], [0, 1], [-2, 4], [-4, 1], [-3, 0]],
-  [[-4, -1], [-2, -4], [1, -4], [4, -2], [4, -1], [1, 0], [4, 2], [2, 4], [1, 3], [-2, 4], [-4, 1]],
-  [[-4, -2], [-1, -2], [-2, -4], [1, -4], [4, -2], [4, 1], [2, 4], [-1, 4], [-1, 1], [-4, 1]],
+  [[0, -2], [2, -4], [4, -2], [3, 0], [4, 2], [1, 4], [-2, 4], [-4, 2], [-4, -2], [-2, -4], [0, -2]],
+  [[2, -1], [4, -2], [2, -4], [0, -3], [-2, -4], [-4, -2], [-3, 0], [-4, 2], [-2, 4], [-1, 3], [2, 4], [4, 1], [2, -1]],
+  [[-2, 0], [-4, 1], [-2, 4], [0, 1], [0, 4], [2, 4], [4, 1], [4, -1], [2, -4], [-1, -4], [-4, -1], [-2, 0]],
+  [[1, 0], [4, -1], [4, -2], [1, -4], [-2, -4], [-1, -2], [-4, -2], [-4, 1], [-2, 4], [1, 3], [2, 4], [4, 2], [1, 0]],
 ];
-// the ship pointing along +x: two long sides and the bar across the back; the flame
-const SHIP = [[[17, 0], [-12, -9.5]], [[17, 0], [-12, 9.5]], [[-7, -6.5], [-7, 6.5]]];
-const FLAME = [[-7, -3.5], [-18, 0], [-7, 3.5]];
-// the saucer, on a grid of -10..10 (the big one at 2 px a unit, the small at 1)
+// the ship: the bar across the back, out to a fin, up to the nose and back by
+// the other fin; the flame comes out of the bar
+const SHIP_K = 2.4;
+const SHIP = [[[-3, -2], [-3, 2], [-5, 4], [7, 0], [-5, -4], [-3, -2]].map(([x, y]) => [x * SHIP_K, y * SHIP_K])];
+const FLAME = [[-3, -2], [-7, 0], [-3, 2]].map(([x, y]) => [x * SHIP_K, y * SHIP_K]);
+// the saucer, on a grid of -5..5 (the big one at 4 px a unit, the small at 2):
+// the hull, and the lines across where the dome and the rim meet it
 const SAUCER = [
-  [[-10, 0], [10, 0]],
-  [[-10, 0], [-4, 4], [4, 4], [10, 0], [4, -4], [-4, -4], [-10, 0]],
-  [[-4, -4], [-2, -8], [2, -8], [4, -4]],
+  [[-5, 1], [-2, 3], [2, 3], [5, 1], [2, -1], [1, -3], [-1, -3], [-2, -1], [-5, 1]],
+  [[-5, 1], [5, 1]],
+  [[-2, -1], [2, -1]],
 ];
 
 export class Screen {
@@ -62,7 +68,7 @@ export class Screen {
     this.dots.length = 0;
     for (const r of g.rocks) {
       const k = ROCK_SCALE[r.size];
-      this.wrapped(r.x, r.y, k * 4.5, (x, y) => this.poly([...ROCKS[r.shape], ROCKS[r.shape][0]], x, y, k));
+      this.wrapped(r.x, r.y, k * 4.5, (x, y) => this.poly(ROCKS[r.shape], x, y, k));
     }
     const s = g.ship;
     if (s && g.shipState === 'alive') {
@@ -74,8 +80,8 @@ export class Screen {
     }
     const u = g.saucer;
     if (u) {
-      const k = u.small ? 1 : 2;
-      this.wrapped(u.x, u.y, 10 * k, (x, y) => { for (const seg of SAUCER) this.poly(seg, x, y, k); });
+      const k = u.small ? 2 : 4;
+      this.wrapped(u.x, u.y, 5 * k, (x, y) => { for (const seg of SAUCER) this.poly(seg, x, y, k); });
     }
     for (const b of g.shots) this.dot(b.x, b.y, 1);
     for (const b of g.saucerShots) this.dot(b.x, b.y, 1);

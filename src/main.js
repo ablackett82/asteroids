@@ -133,14 +133,23 @@ function main() {
   }
 
   // ---- layout ----
+  // Sized to the part of the screen that can be seen: on iPhone, Safari's
+  // toolbars can sit over the bottom of the window, and the home bar and the
+  // camera cut-out take the safe-area insets (the stage's padding). Any of the
+  // picture under them would hide the ship as it wraps between top and bottom.
   function fit() {
     const stage = document.getElementById('stage');
-    const vw = stage.clientWidth, vh = stage.clientHeight;
+    const vv = window.visualViewport;
+    if (vv) Object.assign(stage.style, { inset: 'auto', left: `${vv.offsetLeft}px`, top: `${vv.offsetTop}px`, width: `${vv.width}px`, height: `${vv.height}px` });
+    touch.layout();
+    const cs = getComputedStyle(stage), pad = (k) => parseFloat(cs[k]) || 0;
+    const vw = stage.clientWidth - pad('paddingLeft') - pad('paddingRight');
+    const vh = stage.clientHeight - pad('paddingTop') - pad('paddingBottom');
     const portrait = vh > vw;
-    const reserved = touch.reserved;
+    const reserved = touch.reserved && Math.max(0, touch.reserved - pad('paddingBottom'));
     const availH = portrait && reserved ? Math.max(vh * 0.4, vh - reserved) : vh;
     const scale = Math.min(vw / SCREEN_W, availH / SCREEN_H);
-    const cw = Math.round(SCREEN_W * scale), chh = Math.round(SCREEN_H * scale);
+    const cw = Math.floor(SCREEN_W * scale), chh = Math.floor(SCREEN_H * scale);
     canvas.style.width = `${cw}px`;
     canvas.style.height = `${chh}px`;
     const dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -149,6 +158,8 @@ function main() {
     stage.classList.toggle('top', portrait && reserved > 0);
   }
   window.addEventListener('resize', fit);
+  window.visualViewport?.addEventListener('resize', fit);
+  window.visualViewport?.addEventListener('scroll', fit);
   touch.onLayout = fit;
   fit();
 
