@@ -1,0 +1,12 @@
+{
+  "name": "asteroids-arcade",
+  "version": "0.1.0",
+  "description": "Browser reimplementation of the 1979 arcade game Asteroids",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/serve.js",
+    "test": "node --test test/*.test.js"
+  },
+  "license": "UNLICENSED"
+}
